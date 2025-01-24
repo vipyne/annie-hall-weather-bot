@@ -51,9 +51,8 @@ class ChatbotClient {
     document.body.appendChild(this.botAudio);
   }
 
-  // TODO clear out annie text from time to time
+  // TODO: make this more sophisticated
   clearAnnie(el, time) {
-    console.log("_____clearAnnie ")
     setTimeout(() => {
       function empty(element) {
         while (element.firstElementChild) {
@@ -61,8 +60,6 @@ class ChatbotClient {
         }
       }
       empty(el);
-      console.log("_____time ", time)
-      // clearAnnie();
     }, time);
   }
 
@@ -101,9 +98,7 @@ class ChatbotClient {
     entry.textContent = `${message}`;
 
     entry.font = 'Sans-serif';
-    // entry.style.color = '#2CDFC0';
     entry.style.color = '#f2d21b';
-    // entry['text-decoration-line'] = 'overline';
     entry['text-shadow'] = '2px 2px';
 
     element.appendChild(entry);
@@ -266,25 +261,19 @@ class ChatbotClient {
             this.setupMediaTracks();
           },
           onBotTranscript: (data) => {
+            // for debugging
             if (!data.text.startsWith('&nnie')) {
               this.log(`👾 Bot: ${data.text}`);
             }
 
+            // only print messages from the snarky annie bot
             if (data.text.startsWith('&nnie')) {
-            // this.clearAnnie(this.botTranscriptContainer, 0);
               const text = data.text.replaceAll('&nnie', '');
               const tempDiv = document.createElement('div');
               const entryEl = this.annie(tempDiv, text);
-              // console.log("_____entryEl ", entryEl)
               this.clearAnnie(tempDiv, 10*1000)
             }
           },
-          // onBotLlmText: (data) => {
-          // },
-          // onBotTtsText: (data) => {
-          //   this.log(`onBotTtsText: data: ${JSON.stringify(data)}`);
-          //   this.log(`🦋 onBotTtsText: ${data.text}`);
-          // },
           // Transcript events
           onUserTranscript: (data) => {
 
