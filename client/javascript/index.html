@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Chatbot</title>
+</head>
+
+<body>
+  <div class="container">
+    <div class="status-bar">
+      <div class="status">
+        Status: <span id="connection-status">Disconnected</span>
+      </div>
+      <div class="controls">
+        <button id="connect-btn">Talk to the annie hall weather bot</button>
+        <button id="disconnect-btn" disabled>Disconnect</button>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="bot-container">
+        <div id="bot-video-container">
+          <div id="annie-hall-cat">
+            <img src="./anniehallweatherbot.png" width="370px">
+          </div>
+          <div id="bot-transcript">
+          </div>
+        </div>
+        <audio id="bot-audio" autoplay></audio>
+      </div>
+    </div>
+
+    <div class="debug-panel">
+      <h3>The annie hall weather bot was inspired by <a href="https://www.youtube.com/watch?v=JduADWt0XMI&t=56s">the "honest subtitles" scene.</a></h3>
+      <div id="debug-log"></div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/app.js"></script>
+  <link rel="stylesheet" href="/src/style.css">
+</body>
+
+</html>

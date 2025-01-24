@@ -1,0 +1,5 @@
+fastapi[all]
+noaa_sdk
+pipecat-ai[daily,elevenlabs,openai,silero,google]
+python-dotenv
+uvicorn

@@ -1,0 +1,10 @@
+__pycache__/
+.env
+server/.env
+.venv
+env/
+venv/
+.env.local
+
+.DS_Store
+client/javascript/node_modules/*
