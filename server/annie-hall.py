@@ -64,20 +64,6 @@ class annieSubtitler(FrameProcessor):
         else:
             await self.push_frame(frame, direction)
 
-class annieSilencer(FrameProcessor):
-    def __init__(self):
-        super().__init__()
-
-    async def process_frame(self, frame: Frame, direction: FrameDirection):
-        await super().process_frame(frame, direction)
-
-        # just omit text frames from main weather bot
-        if isinstance(frame, LLMTextFrame):
-            pass
-        # let all other frames pass
-        else:
-            await self.push_frame(frame, direction)
-
 # webrtc room to talk to the bot
 async def get_daily_room():
     room_override = os.getenv("DAILY_ROOM")
@@ -286,7 +272,6 @@ async def main():
     )
     context_aggregator = llm.create_context_aggregator(context)
 
-    annie_shhh = annieSilencer()
     annie_text = annieSubtitler()
 
     rtvi = RTVIProcessor(config=RTVIConfig(config=[]))
