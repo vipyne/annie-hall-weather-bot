@@ -337,13 +337,6 @@ class ChatbotClient {
           this.botAudio.srcObject = null;
         }
 
-        // Clean up video
-        if (this.botVideoContainer.querySelector('video')?.srcObject) {
-          const video = this.botVideoContainer.querySelector('video');
-          video.srcObject.getTracks().forEach((track) => track.stop());
-          video.srcObject = null;
-        }
-        this.botVideoContainer.innerHTML = '';
       } catch (error) {
         this.log(`Error disconnecting: ${error.message}`);
       }
