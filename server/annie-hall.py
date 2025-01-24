@@ -134,7 +134,8 @@ async def main():
         ),
     )
 
-    tool_system_instruction = """
+    system_instruction = """
+    You are a helpful assistant who can answer questions and use tools.
     You have a tool called "get_weather" that can be used to get the current weather.
 
     If the user asks for the weather, call this tool and do not ask the user for latitude and longitude. 
@@ -144,11 +145,6 @@ async def main():
     
     If you are asked about a location outside the United States, respond that you are only able to retrieve current weather information for locations in the United States. 
     If a location is not provided, always ask the user what location for which they would like the weather.
-
-    """
-
-    system_instruction = """
-    You are a helpful assistant who can answer questions and use tools.
     """
 
     tools = [
@@ -188,18 +184,16 @@ async def main():
     # Aoede
     llm = GeminiMultimodalLiveLLMService(
         api_key=os.getenv("GOOGLE_API_KEY"),
-        system_instruction=system_instruction + tool_system_instruction,
+        system_instruction=system_instruction,
         transcribe_model_audio=True,
         transcribe_user_audio=True,
         tools=tools,
         voice_id="Fenrir",
     )
 
-    ah_system_instruction_1 = """
-    You are a snide commenter who makes snarky remarks.
-    """
 
-    ah_system_instruction_2 = """
+    ah_system_instruction = """
+    You are a snide commenter who makes snarky remarks.
     When a user asks about the weather, respond with a snarky quip about how the specific weather is terrible. 
     Do not provide the temperature or weather information. only comment about how it is unusual (or usual) depending on the weather and the city.
     Make snide comments about the city who's weather is being described.
@@ -209,8 +203,7 @@ async def main():
 
     annie_hallm = GeminiMultimodalLiveLLMService(
         api_key=os.getenv("GOOGLE_API_KEY"),
-        system_instruction=ah_system_instruction_2,
-        # system_instruction=ah_system_instruction_1 + tool_system_instruction + ah_system_instruction_2,
+        system_instruction=ah_system_instruction,
         transcribe_model_audio=True,
         transcribe_user_audio=True,
         # tools=tools,
@@ -286,6 +279,7 @@ async def main():
             )
 
     llm.register_function("get_weather", fetch_weather_from_api)
+    annie_hallm.register_function("get_weather", fetch_weather_from_api)
 
     context = OpenAILLMContext(
         [{"role": "user", "content": "Say hello. Make a subtle weather pun."}],
@@ -300,14 +294,15 @@ async def main():
     pipeline = Pipeline(
         [
             transport.input(),  # Transport user input
-            context_aggregator.user(),  # User responses
             ParallelPipeline(
                 [
                     # handles tool call and actually says the weather in audio
+                    context_aggregator.user(),  # User responses
                     llm,
                 ],
                 [ 
-                    # handles tool call and makes snarky remarks in text
+                    # makes snarky remarks in text
+                    annie_context_aggregator.user(),  # User responses
                     annie_hallm, 
                     annie_text,
                     rtvi,
@@ -315,6 +310,7 @@ async def main():
             ),
             transport.output(),  # Transport bot output
             context_aggregator.assistant(),  # Assistant spoken responses
+            annie_context_aggregator.assistant(), # Assistant text responses
         ]
     )
 
