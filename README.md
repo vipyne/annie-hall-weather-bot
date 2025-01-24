@@ -1,6 +1,6 @@
 # annie hall weather bot
 
-<img src="client/javascript/anniehallweatherbot.png" width="300px">
+<img src="anniehallweatherbot-readme.png" width="620px">
 
 This repository demonstrates simple llm function calling with Gemini Multimodal Live and multiple llm prompts. Concept inspired by [the "honest subtitles" scene](https://www.youtube.com/watch?v=JduADWt0XMI&t=56s). Implementation heavily influenced by [simple chatbot](https://github.com/pipecat-ai/pipecat/tree/main/examples/simple-chatbot) and [this](https://github.com/vipyne/weather-bot).
 
