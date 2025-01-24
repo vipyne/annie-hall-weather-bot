@@ -55,8 +55,6 @@ The bot server must be running for any of the client implementations to work. St
 
 - Python 3.10+
 - Node.js 16+
-- Daily API key
-- OpenAI API key
-- Gemini API key
-- ElevenLabs API key
+- Daily API key (free)
+- Gemini API key (free)
 - Modern web browser with WebRTC support

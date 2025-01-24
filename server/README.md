@@ -15,9 +15,7 @@ Copy `env.example` to `.env` and configure:
 ```ini
 # Required API Keys
 DAILY_API_KEY=           # Your Daily API key
-OPENAI_API_KEY=          # Your OpenAI API key (required for OpenAI bot)
 GOOGLE_API_KEY=          # Your Gemini API key (required for Gemini bot)
-ELEVENLABS_API_KEY=      # Your ElevenLabs API key
 
 # Optional Configuration
 DAILY_SAMPLE_ROOM_URL=   # Optional: Fixed room URL for development
