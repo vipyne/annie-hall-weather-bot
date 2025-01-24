@@ -134,9 +134,7 @@ async def main():
         ),
     )
 
-    system_instruction = """
-    You are a helpful assistant who can answer questions and use tools.
-
+    tool_system_instruction = """
     You have a tool called "get_weather" that can be used to get the current weather.
 
     If the user asks for the weather, call this tool and do not ask the user for latitude and longitude. 
@@ -144,8 +142,13 @@ async def main():
     Use ONLY this tool to get weather information. Never use other tools or apis, even if you encounter an error.
     Say you are having trouble retrieving the weather if the tool call does not work.
     
-    If you are asked about a location outside the United States, politely respond that you are only able to retrieve current weather information for locations in the United States. 
+    If you are asked about a location outside the United States, respond that you are only able to retrieve current weather information for locations in the United States. 
     If a location is not provided, always ask the user what location for which they would like the weather.
+
+    """
+
+    system_instruction = """
+    You are a helpful assistant who can answer questions and use tools.
     """
 
     tools = [
@@ -185,26 +188,32 @@ async def main():
     # Aoede
     llm = GeminiMultimodalLiveLLMService(
         api_key=os.getenv("GOOGLE_API_KEY"),
-        system_instruction=system_instruction,
+        system_instruction=system_instruction + tool_system_instruction,
         transcribe_model_audio=True,
         transcribe_user_audio=True,
         tools=tools,
         voice_id="Fenrir",
     )
 
-    ah_system_instruction = """
-    When weather information is provided, you provide a short, snarky quip about how the specific weather is terrible.
+    ah_system_instruction_1 = """
+    You are a snide commenter who makes snarky remarks.
+    """
+
+    ah_system_instruction_2 = """
+    When a user asks about the weather, respond with a snarky quip about how the specific weather is terrible. 
     Do not provide the temperature or weather information. only comment about how it is unusual (or usual) depending on the weather and the city.
-    You can also make snide comments about the city who's weather is being described.
+    Make snide comments about the city who's weather is being described.
     Try to make pop culture references to the film Annie Hall. But mix it up; don't always use the same joke template for the response.
     Always keep these responses very brief; just one sentence.
     """
 
     annie_hallm = GeminiMultimodalLiveLLMService(
         api_key=os.getenv("GOOGLE_API_KEY"),
-        system_instruction=ah_system_instruction,
+        system_instruction=ah_system_instruction_2,
+        # system_instruction=ah_system_instruction_1 + tool_system_instruction + ah_system_instruction_2,
         transcribe_model_audio=True,
         transcribe_user_audio=True,
+        # tools=tools,
     )
 
     annie_hallm.set_model_modalities(
@@ -292,11 +301,18 @@ async def main():
         [
             transport.input(),  # Transport user input
             context_aggregator.user(),  # User responses
-            llm,
-            annie_shhh, 
-            annie_hallm, 
-            annie_text,
-            rtvi,
+            ParallelPipeline(
+                [
+                    # handles tool call and actually says the weather in audio
+                    llm,
+                ],
+                [ 
+                    # handles tool call and makes snarky remarks in text
+                    annie_hallm, 
+                    annie_text,
+                    rtvi,
+                ]
+            ),
             transport.output(),  # Transport bot output
             context_aggregator.assistant(),  # Assistant spoken responses
         ]
