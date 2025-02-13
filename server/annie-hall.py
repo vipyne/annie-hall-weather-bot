@@ -265,7 +265,7 @@ async def main():
             )
 
     llm.register_function("get_weather", fetch_weather_from_api)
-    annie_hallm.register_function("get_weather", fetch_weather_from_api)
+    # annie_hallm.register_function("get_weather", fetch_weather_from_api)
 
     context = OpenAILLMContext(
         [{"role": "user", "content": "Say hello. Make a subtle weather pun."}],
