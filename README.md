@@ -2,7 +2,7 @@
 
 <img src="anniehallweatherbot-readme.png" width="620px">
 
-This repository demonstrates simple llm function calling with Gemini Multimodal Live and multiple llm prompts. Concept inspired by [the "honest subtitles" scene](https://www.youtube.com/watch?v=JduADWt0XMI&t=56s). Implementation heavily influenced by [simple chatbot](https://github.com/pipecat-ai/pipecat/tree/main/examples/simple-chatbot) and [this](https://github.com/vipyne/weather-bot).
+This repository demonstrates simple llm function calling with Gemini Multimodal Live and parallel [Pipecat](https://github.com/pipecat-ai/pipecat) pipelines. Concept inspired by [the "honest subtitles" scene](https://www.youtube.com/watch?v=JduADWt0XMI&t=56s)\*. Implementation heavily influenced by [simple chatbot](https://github.com/pipecat-ai/pipecat/tree/main/examples/simple-chatbot) and [this](https://github.com/vipyne/weather-bot).
 
 ## Quick Start
 
@@ -58,3 +58,5 @@ The bot server must be running for any of the client implementations to work. St
 - Daily API key (free)
 - Gemini API key (free)
 - Modern web browser with WebRTC support
+
+\* the content can be problematic, but the concept is solid.
