@@ -1,9 +1,3 @@
-#
-# Copyright (c) 2024, Daily
-#
-# SPDX-License-Identifier: BSD 2-Clause License
-#
-
 import aiohttp
 import asyncio
 import os
@@ -20,11 +14,7 @@ from pipecat.audio.vad.vad_analyzer import VADParams
 from pipecat.frames.frames import (
     Frame,
     EndFrame,
-    LLMMessagesFrame,
-    BotSpeakingFrame,
-    TextFrame,
     LLMTextFrame,
-    TransportMessageFrame,
 )
 from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 from pipecat.pipeline.parallel_pipeline import ParallelPipeline
@@ -64,20 +54,6 @@ class annieSubtitler(FrameProcessor):
         else:
             await self.push_frame(frame, direction)
 
-class annieSilencer(FrameProcessor):
-    def __init__(self):
-        super().__init__()
-
-    async def process_frame(self, frame: Frame, direction: FrameDirection):
-        await super().process_frame(frame, direction)
-
-        # just omit text frames from main weather bot
-        if isinstance(frame, LLMTextFrame):
-            pass
-        # let all other frames pass
-        else:
-            await self.push_frame(frame, direction)
-
 # webrtc room to talk to the bot
 async def get_daily_room():
     room_override = os.getenv("DAILY_ROOM")
@@ -95,6 +71,60 @@ async def get_daily_room():
                 DailyRoomParams(properties={"enable_prejoin_ui": False})
             )
             return room_config.url
+
+async def get_noaa_simple_weather(latitude: float, longitude: float, **kwargs):
+    logger.log(new_level_symbol, f"get_noaa_simple_weather for: '{latitude}, {longitude}'")
+    n = NOAA()
+    description = False
+    fahrenheit_temp = 0
+    try:
+        observations = n.get_observations_by_lat_lon(latitude, longitude, num_of_stations=1)
+        for observation in observations:
+            description = observation["textDescription"]
+            celsius_temp = observation["temperature"]["value"]
+            if description:
+                break
+
+        fahrenheit_temp = (celsius_temp * 9 / 5) + 32
+
+    except Exception as e:
+        logger.log(new_level_symbol, f"Error getting NOAA weather: {e}")
+
+    logger.log(
+        new_level_symbol, f"get_noaa_simple_weather results: {description}, {fahrenheit_temp}"
+    )
+    return description, fahrenheit_temp
+
+async def fetch_weather_from_api(
+    function_name, tool_call_id, args, llm, context, result_callback
+):
+    logger.log(new_level_symbol, f"fetch_weather_from_api * args: {args}")
+    location = args["location"]
+    latitude = float(args["latitude"])
+    longitude = float(args["longitude"])
+    description, fahrenheit_temp = None, None
+
+    if latitude and longitude:
+        description, fahrenheit_temp = await get_noaa_simple_weather(latitude, longitude)
+    else:
+        return await result_callback("Sorry, I don't recognize that location.")
+
+    if not fahrenheit_temp:
+        return await result_callback(
+            f"I'm sorry, I can't get the weather for {location} right now. Can you ask again please?"
+        )
+    logger.log(
+        new_level_symbol, f"fetch_weather_from_api results: {description}, {fahrenheit_temp}"
+    )
+    if not description:
+        return await result_callback(
+            f"According to noah, the weather in {location} is currently {round(fahrenheit_temp)} degrees."
+        )
+    else:
+        logger.log(new_level_symbol, f"awaiting result_callback...")
+        await result_callback(
+            f"According to noah, the weather in {location} is currently {round(fahrenheit_temp)} degrees and {description}."
+        )
 
 async def main():
     bot_name = "⛅︎ annie hall weather bot ⛅︎"
@@ -116,6 +146,7 @@ async def main():
     logger.opt(colors=True).log(new_level_symbol, f"<black><MAGENTA>_____*</MAGENTA></black>")
     logger.opt(colors=True).log(new_level_symbol, f"<black><R>_____*</R></black>")
 
+    # transport
     transport = DailyTransport(
         room_url,
         None,
@@ -134,9 +165,9 @@ async def main():
         ),
     )
 
+    # voice weather bot llm setup
     system_instruction = """
     You are a helpful assistant who can answer questions and use tools.
-
     You have a tool called "get_weather" that can be used to get the current weather.
 
     If the user asks for the weather, call this tool and do not ask the user for latitude and longitude. 
@@ -144,7 +175,7 @@ async def main():
     Use ONLY this tool to get weather information. Never use other tools or apis, even if you encounter an error.
     Say you are having trouble retrieving the weather if the tool call does not work.
     
-    If you are asked about a location outside the United States, politely respond that you are only able to retrieve current weather information for locations in the United States. 
+    If you are asked about a location outside the United States, respond that you are only able to retrieve current weather information for locations in the United States. 
     If a location is not provided, always ask the user what location for which they would like the weather.
     """
 
@@ -192,10 +223,12 @@ async def main():
         voice_id="Fenrir",
     )
 
+    # annie hall snarky comment llm setup
     ah_system_instruction = """
-    When weather information is provided, you provide a short, snarky quip about how the specific weather is terrible.
+    You are a snide commenter who makes snarky remarks.
+    When a user asks about the weather, respond with a snarky quip about how the specific weather is terrible. 
     Do not provide the temperature or weather information. only comment about how it is unusual (or usual) depending on the weather and the city.
-    You can also make snide comments about the city who's weather is being described.
+    Make snide comments about the city who's weather is being described.
     Try to make pop culture references to the film Annie Hall. But mix it up; don't always use the same joke template for the response.
     Always keep these responses very brief; just one sentence.
     """
@@ -221,84 +254,41 @@ async def main():
     )
     annie_context_aggregator = annie_hallm.create_context_aggregator(annie_context)
 
-    ## tool calling
-    async def get_noaa_simple_weather(latitude: float, longitude: float, **kwargs):
-        logger.log(new_level_symbol, f"get_noaa_simple_weather for: '{latitude}, {longitude}'")
-        n = NOAA()
-        description = False
-        fahrenheit_temp = 0
-        try:
-            observations = n.get_observations_by_lat_lon(latitude, longitude, num_of_stations=1)
-            for observation in observations:
-                description = observation["textDescription"]
-                celsius_temp = observation["temperature"]["value"]
-                if description:
-                    break
-
-            fahrenheit_temp = (celsius_temp * 9 / 5) + 32
-
-        except Exception as e:
-            logger.log(new_level_symbol, f"Error getting NOAA weather: {e}")
-
-        logger.log(
-            new_level_symbol, f"get_noaa_simple_weather results: {description}, {fahrenheit_temp}"
-        )
-        return description, fahrenheit_temp
-
-    async def fetch_weather_from_api(
-        function_name, tool_call_id, args, llm, context, result_callback
-    ):
-        logger.log(new_level_symbol, f"fetch_weather_from_api * args: {args}")
-        location = args["location"]
-        latitude = float(args["latitude"])
-        longitude = float(args["longitude"])
-        description, fahrenheit_temp = None, None
-
-        if latitude and longitude:
-            description, fahrenheit_temp = await get_noaa_simple_weather(latitude, longitude)
-        else:
-            return await result_callback("Sorry, I don't recognize that location.")
-
-        if not fahrenheit_temp:
-            return await result_callback(
-                f"I'm sorry, I can't get the weather for {location} right now. Can you ask again please?"
-            )
-        logger.log(
-            new_level_symbol, f"fetch_weather_from_api results: {description}, {fahrenheit_temp}"
-        )
-        if not description:
-            return await result_callback(
-                f"According to noah, the weather in {location} is currently {round(fahrenheit_temp)} degrees."
-            )
-        else:
-            logger.log(new_level_symbol, f"awaiting result_callback...")
-            await result_callback(
-                f"According to noah, the weather in {location} is currently {round(fahrenheit_temp)} degrees and {description}."
-            )
-
+    ## tool call setup
     llm.register_function("get_weather", fetch_weather_from_api)
 
+    # voice weather bot context
     context = OpenAILLMContext(
         [{"role": "user", "content": "Say hello. Make a subtle weather pun."}],
     )
     context_aggregator = llm.create_context_aggregator(context)
 
-    annie_shhh = annieSilencer()
-    annie_text = annieSubtitler()
+    # text processors
+    annie_text_subtitles = annieSubtitler()
 
     rtvi = RTVIProcessor(config=RTVIConfig(config=[]))
 
+    # use parallel pipeline
     pipeline = Pipeline(
         [
             transport.input(),  # Transport user input
-            context_aggregator.user(),  # User responses
-            llm,
-            annie_shhh, 
-            annie_hallm, 
-            annie_text,
-            rtvi,
+            ParallelPipeline(
+                [
+                    # handles tool call and actually says the weather in audio
+                    context_aggregator.user(),  # User responses
+                    llm, # voice weather bot llm
+                ],
+                [ 
+                    # makes snarky remarks in text
+                    annie_context_aggregator.user(),  # User responses
+                    annie_hallm, # subtitle llm
+                    annie_text_subtitles, # prep subtitle text for front end
+                    rtvi, # send subtitles to front end client
+                ]
+            ),
             transport.output(),  # Transport bot output
             context_aggregator.assistant(),  # Assistant spoken responses
+            annie_context_aggregator.assistant(), # Assistant text responses
         ]
     )
 
