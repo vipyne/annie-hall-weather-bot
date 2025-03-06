@@ -8,7 +8,7 @@ This repository demonstrates simple llm function calling with Gemini Multimodal 
 
 1. Copy env.example to .env and add API keys
    ```bash
-   cp env.example .env
+   cp example.env .env
    ```
 
 2. Setup server
