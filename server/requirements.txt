@@ -1,5 +1,5 @@
 fastapi[all]
 noaa_sdk
-pipecat-ai[daily,elevenlabs,openai,silero,google]
+pipecat-ai[daily,google,openai,silero]
 python-dotenv
 uvicorn
