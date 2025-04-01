@@ -1,3 +1,5 @@
+> TODO: fix gemini function calling to keep up with new pipecat version
+
 # annie hall weather bot
 
 <img src="anniehallweatherbot-readme.png" width="620px">
@@ -8,7 +10,7 @@ This repository demonstrates simple llm function calling with Gemini Multimodal 
 
 1. Copy env.example to .env and add API keys
    ```bash
-   cp example.env .env
+   cp server/example.env server/.env
    ```
 
 2. Setup server

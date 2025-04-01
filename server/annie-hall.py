@@ -30,7 +30,7 @@ from pipecat.services.google import GoogleLLMService
 from pipecat.transports.services.daily import DailyParams, DailyTransport
 from pipecat.transports.services.helpers.daily_rest import DailyRESTHelper, DailyRoomParams
 
-from pipecat.processors.frameworks.rtvi import RTVIConfig, RTVIProcessor
+from pipecat.processors.frameworks.rtvi import RTVIConfig, RTVIObserver, RTVIProcessor
 
 logger.remove(0)
 logger.add(sys.stderr, level="DEBUG", colorize=True)
@@ -297,7 +297,7 @@ async def main():
         params=PipelineParams(
             allow_interruptions=True,
             enable_metrics=True,
-            observers=[rtvi.observer()],
+            observers=[RTVIObserver(rtvi)],
         ),
     )
 
